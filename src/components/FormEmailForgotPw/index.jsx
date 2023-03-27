@@ -51,7 +51,7 @@ const FormEmailForgotPw = ({ isOpen, setIsOpen }) => {
               className="rounded-[10px] h-[48px]"
             />
           </Form.Item>
-          <Form.Item>
+          <Form.Item className="!mb-0">
             <Button
               htmlType="submit"
               className="w-full rounded-[10px] bg-[#4F94CD] h-[55px] !text-[16px] !text-white font-bold !border-none !outline-0 shadow-lg hover:opacity-90"
