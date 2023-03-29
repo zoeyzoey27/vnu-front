@@ -1,11 +1,40 @@
-import { Modal, Row, Form, Input, Button, Select } from "antd";
+import { Modal, Row, Form, Input, Button, Select, message } from "antd";
 import { GrFormClose } from "react-icons/gr";
 import { schemaValidate } from "../../validations/AddUser";
 import { converSchemaToAntdRule } from "../../validations";
+import { useMutation } from "@apollo/client";
+import { ADD_USER } from "./graphql";
+import moment from "moment";
+import { ACTIVE, DATE_TIME_FORMAT } from "../../constants";
 
 const FormAddUser = ({ isOpen, onClose }) => {
   const [form] = Form.useForm();
+  const [addUser] = useMutation(ADD_USER);
   const yupSync = converSchemaToAntdRule(schemaValidate);
+  const onSubmit = (values) => {
+    const customId = "US" + Math.floor(Math.random() * Date.now());
+    addUser({
+      variables: {
+        userRegisterInput: {
+          userId: customId,
+          fullName: values.name,
+          email: values.email,
+          password: values.password,
+          role: values.role,
+          status: ACTIVE,
+          createdAt: moment().format(DATE_TIME_FORMAT),
+          updatedAt: moment().format(DATE_TIME_FORMAT),
+        },
+      },
+      onCompleted: () => {
+        message.success("Thêm người dùng thành công!");
+        form.resetFields();
+      },
+      onError: (error) => {
+        message.error(`${error.message}`);
+      },
+    });
+  };
   return (
     <Modal
       title={<Row className="text-xl">Thêm người dùng</Row>}
@@ -19,6 +48,7 @@ const FormAddUser = ({ isOpen, onClose }) => {
         autoComplete="off"
         form={form}
         className="w-full mt-5"
+        onFinish={onSubmit}
       >
         <Form.Item
           name="name"
@@ -81,7 +111,7 @@ const FormAddUser = ({ isOpen, onClose }) => {
         >
           <Select
             className="customSelect"
-            defaultValue="ADMIN"
+            placeholder="Quản trị viên"
             popupClassName="!rounded-[10px]"
           >
             <Select.Option

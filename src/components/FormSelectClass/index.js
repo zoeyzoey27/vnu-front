@@ -1,31 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal, Row, Form, Input, Button } from "antd";
 import { GrFormClose } from "react-icons/gr";
 
-const FormSelectTeacher = ({
-  isOpen,
-  onClose,
-  teacherList,
-  formCreateClass,
-}) => {
+const FormSelectClass = ({ isOpen, onClose, classList, formCreateStudent }) => {
   const [form] = Form.useForm();
-  const [listItems, setListItems] = useState(teacherList);
-  const [teacherSelected, setTeacherSelected] = useState();
+  const [listItems, setListItems] = useState([]);
+  const [classSelected, setClassSelected] = useState();
   const onSubmit = () => {
-    const teacher = teacherList.find((item) => item?.id === teacherSelected);
-    formCreateClass?.setFieldValue("teacher", teacher?.name);
-    formCreateClass?.setFieldValue("teacherId", teacher?.id);
+    const classItem = classList.find((item) => item?.id === classSelected);
+    formCreateStudent?.setFieldValue("class", classItem?.name);
+    formCreateStudent?.setFieldValue("classId", classItem?.id);
     onClose();
   };
   const onSearch = (values) => {
-    const items = teacherList.filter((item) =>
-      item.name.match(values.searchInput)
+    const items = classList.filter((item) =>
+      item.name.toLowerCase().match(values?.searchInput?.toLowerCase())
     );
     setListItems(items);
   };
+  useEffect(() => {
+    if (classList && !formCreateStudent.getFieldsValue().searchInput)
+      setListItems(classList);
+  }, [classList, formCreateStudent]);
   return (
     <Modal
-      title={<Row className="text-xl">Chọn cố vấn học tập</Row>}
+      title={<Row className="text-xl">Chọn lớp</Row>}
       open={isOpen}
       footer={null}
       centered
@@ -55,10 +54,10 @@ const FormSelectTeacher = ({
           {listItems?.map((item) => (
             <Row
               className={`${
-                teacherSelected === item.id && "bg-[#A4D3EE]/30"
+                classSelected === item.id && "bg-[#A4D3EE]/30"
               } px-2 py-2.5 hover:bg-[#A4D3EE]/30 cursor-pointer rounded-[10px] my-1 !grid-cols-12`}
               key={item.id}
-              onClick={() => setTeacherSelected(item.id)}
+              onClick={() => setClassSelected(item.id)}
             >
               {item.name}
             </Row>
@@ -75,4 +74,4 @@ const FormSelectTeacher = ({
   );
 };
 
-export default FormSelectTeacher;
+export default FormSelectClass;

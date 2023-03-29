@@ -1,30 +1,8 @@
 import { Modal, Row, Form, Input, Button } from "antd";
 import { GrFormClose } from "react-icons/gr";
 
-const FormSelectStudent = ({ isOpen, onClose }) => {
+const FormSelectStudent = ({ isOpen, onClose, studentList }) => {
   const [form] = Form.useForm();
-  const listTeacher = [
-    {
-      id: "1",
-      name: "Student 1",
-    },
-    {
-      id: "2",
-      name: "Student 2",
-    },
-    {
-      id: "3",
-      name: "Student 3",
-    },
-    {
-      id: "4",
-      name: "Student 4",
-    },
-    {
-      id: "5",
-      name: "Student 5",
-    },
-  ];
   return (
     <Modal
       title={<Row className="text-xl">Thêm sinh viên</Row>}
@@ -52,7 +30,7 @@ const FormSelectStudent = ({ isOpen, onClose }) => {
             <Row className="w-[30%]">Mã sinh viên</Row>
             <Row className="w-[70%] flex justify-end">Tên sinh viên</Row>
           </Row>
-          {listTeacher.map((item) => (
+          {studentList?.map((item) => (
             <Row
               className="px-2 py-2.5 hover:bg-[#A4D3EE]/30 cursor-pointer rounded-[10px] my-1 !grid-cols-12 flex justify-between"
               key={item.id}

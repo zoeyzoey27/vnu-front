@@ -47,3 +47,6 @@ body {
   border-radius: 10px;
   background-color: rgba(0, 0, 0, 0.3) !important;
 }
+.ant-select .ant-select-clear{
+  top: 40% !important;
+}

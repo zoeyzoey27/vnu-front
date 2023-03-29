@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Row,
   Form,
@@ -16,6 +16,9 @@ import { BiDetail } from "react-icons/bi";
 import ModalConfirm from "../../components/ModalConfirm";
 import FormCreateClass from "../../components/FormCreateClass";
 import DetailClass from "../../components/DetailClass";
+import { useQuery } from "@apollo/client";
+import { GET_CLASS_LIST } from "./graphql";
+import { PAGE_DEFAULT, PAGE_SIZE_DEFAULT, SKIP_DEFAULT } from "../../constants";
 
 const ClassList = () => {
   const [form] = Form.useForm();
@@ -25,6 +28,31 @@ const ClassList = () => {
   const [isCreateClass, setIsCreateClass] = useState(false);
   const [isEditClass, setIsEditClass] = useState(false);
   const [isOpenDetail, setIsOpenDetail] = useState(false);
+  const [dataClasses, setDataClasses] = useState([]);
+  const [searchCondition, setSearchCondition] = useState({
+    className: "",
+    pageIndex: PAGE_DEFAULT,
+    pageSize: PAGE_SIZE_DEFAULT,
+  });
+  const { data: dataInit } = useQuery(GET_CLASS_LIST, {
+    variables: {
+      className: "",
+      skip: null,
+      take: null,
+    },
+  });
+  const { data } = useQuery(GET_CLASS_LIST, {
+    variables: {
+      className: searchCondition.className,
+      skip: searchCondition?.pageSize
+        ? searchCondition.pageSize * (searchCondition.pageIndex - 1)
+        : SKIP_DEFAULT,
+      take: searchCondition?.pageSize || PAGE_SIZE_DEFAULT,
+    },
+    onCompleted: () => {
+      //loading false
+    },
+  });
   const columns = [
     {
       title: "Mã lớp",
@@ -86,29 +114,6 @@ const ClassList = () => {
       width: "20px",
     },
   ];
-  const data = [
-    {
-      key: "1",
-      id: "1",
-      name: "Class A",
-      teacher: "Teacher Teacher",
-      students: 30,
-    },
-    {
-      key: "2",
-      id: "2",
-      name: "Class B",
-      teacher: "Teacher Teacher",
-      students: 30,
-    },
-    {
-      key: "3",
-      id: "3",
-      name: "Class C",
-      teacher: "Teacher Teacher",
-      students: 30,
-    },
-  ];
   const onSelectChange = (newSelectedRowKeys) => {
     console.log("selectedRowKeys changed: ", newSelectedRowKeys);
     setSelectedRowKeys(newSelectedRowKeys);
@@ -117,11 +122,38 @@ const ClassList = () => {
     selectedRowKeys,
     onChange: onSelectChange,
   };
+  const onSearch = (values) => {
+    setSearchCondition((pre) => ({
+      ...pre,
+      className: values.searchInput,
+      pageIndex: PAGE_DEFAULT,
+    }));
+  };
+  const onChangePagination = (page, limit) => {
+    setSearchCondition({
+      ...searchCondition,
+      pageIndex: page,
+      pageSize: limit,
+    });
+  };
+  useEffect(() => {
+    if (data) {
+      const items = data?.getAllClasses?.map((item) => {
+        return {
+          id: item?.classId,
+          name: item?.name,
+          teacher: item?.teacher?.fullName,
+          students: item?.students?.length || 0,
+        };
+      });
+      setDataClasses(items);
+    }
+  }, [data]);
   return (
     <Row className="flex flex-col w-full h-full bg-white p-5 !rounded-[15px] shadow-lg relative">
       <Row className="text-[20px] font-bold">Quản lý lớp</Row>
       <Row className="flex items-center justify-end my-5">
-        <Form form={form} className="mr-5">
+        <Form form={form} className="mr-5" onFinish={onSearch}>
           <Form.Item className="!my-0">
             <Input
               name="searchInput"
@@ -154,15 +186,15 @@ const ClassList = () => {
         rowKey="id"
         rowSelection={rowSelection}
         columns={columns}
-        dataSource={data}
+        dataSource={dataClasses}
         pagination={false}
         scroll={{ x: "max-content" }}
       />
       <Pagination
-        current={1}
-        pageSize={10}
-        total={4}
-        onChange={() => {}}
+        current={searchCondition?.pageIndex}
+        pageSize={searchCondition?.pageSize}
+        total={dataInit?.getAllClasses?.length}
+        onChange={onChangePagination}
         className="mt-10 w-full flex justify-end absolute bottom-5 right-5"
       />
       <ModalConfirm

@@ -1,16 +1,73 @@
-import { Modal, Row, Form, Input, Button } from "antd";
+import { useEffect } from "react";
+import { Modal, Row, Form, Input, Button, message } from "antd";
 import { GrFormClose } from "react-icons/gr";
 import { schemaValidate } from "../../validations/CreateClass";
 import { converSchemaToAntdRule } from "../../validations";
 import { useState } from "react";
 import FormSelectTeacher from "../FormSelectTeacher";
 import FormSelectStudent from "../FormSelectStudent";
+import { useMutation } from "@apollo/client";
+import { CREATE_CLASS, GET_USER_LIST } from "./graphql";
+import { DATE_TIME_FORMAT } from "../../constants";
+import moment from "moment";
+import { useQuery } from "@apollo/client";
 
 const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
   const [form] = Form.useForm();
+  const [createClass] = useMutation(CREATE_CLASS);
   const [isSelectTeacher, setIsSelectTeacher] = useState(false);
   const [isSelectStudent, setIsSelectStudent] = useState(false);
+  const [teacherList, setTeacherList] = useState([]);
+  const [studentList, setStudentList] = useState([]);
   const yupSync = converSchemaToAntdRule(schemaValidate);
+  const { data: dataUser } = useQuery(GET_USER_LIST, {
+    variables: {
+      userInput: {
+        fullName: "",
+        role: "TEACHER",
+      },
+      skip: null,
+      take: null,
+    },
+  });
+  const onSubmit = (values) => {
+    createClass({
+      variables: {
+        createClassInput: {
+          classId: values.id,
+          name: values.name,
+          teacherId: values.teacherId,
+          studentIds: [],
+          createdAt: moment().format(DATE_TIME_FORMAT),
+          updatedAt: moment().format(DATE_TIME_FORMAT),
+        },
+      },
+      onCompleted: () => {
+        message.success("Thêm lớp thành công!");
+        form.resetFields();
+        onClose();
+      },
+      onError: (error) => {
+        message.error(`${error.message}`);
+      },
+    });
+  };
+  useEffect(() => {
+    if (dataUser) {
+      const items = dataUser?.getAllUsers?.map((item) => {
+        return {
+          id: item.id,
+          name: item.fullName,
+          userClass: item.userClass
+        };
+      });
+      setTeacherList(
+        items.filter(
+          (item) => item.userClass === null || item.userClass === undefined
+        )
+      );
+    }
+  }, [dataUser]);
   return (
     <>
       <Modal
@@ -29,6 +86,7 @@ const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
           autoComplete="off"
           form={form}
           className="w-full mt-5"
+          onFinish={onSubmit}
         >
           <Form.Item
             name="id"
@@ -67,8 +125,12 @@ const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
             <Input
               onClick={() => setIsSelectTeacher(true)}
               placeholder="Cố vấn học tập"
+              readOnly
               className="rounded-[10px] h-[48px]"
             />
+          </Form.Item>
+          <Form.Item name="teacherId" className="hidden" required={false}>
+            <Input readOnly className="rounded-[10px] h-[48px]" />
           </Form.Item>
           <Form.Item
             name="students"
@@ -79,6 +141,7 @@ const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
             <Input
               onClick={() => setIsSelectStudent(true)}
               placeholder="30"
+              readOnly
               className="rounded-[10px] h-[48px]"
             />
           </Form.Item>
@@ -94,10 +157,13 @@ const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
       </Modal>
       <FormSelectTeacher
         isOpen={isSelectTeacher}
+        teacherList={teacherList}
         onClose={() => setIsSelectTeacher(false)}
+        formCreateClass={form}
       />
       <FormSelectStudent
         isOpen={isSelectStudent}
+        studentList={studentList}
         onClose={() => setIsSelectStudent(false)}
       />
     </>

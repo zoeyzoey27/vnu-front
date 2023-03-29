@@ -1,11 +1,79 @@
-import { Modal, Row, Form, Input, Button } from "antd";
+import { useEffect } from "react";
+import { Modal, Row, Form, Input, Button, message } from "antd";
 import { GrFormClose } from "react-icons/gr";
 import { schemaValidate } from "../../validations/CreateMajor";
 import { converSchemaToAntdRule } from "../../validations";
+import { useMutation, useQuery } from "@apollo/client";
+import { CREATE_MAJOR, GET_MAJOR, UPDATE_MAJOR } from "./graphql";
+import moment from "moment";
+import { DATE_TIME_FORMAT } from "../../constants";
 
-const FormCreateMajor = ({ isOpen, onClose, isEdit }) => {
+const FormCreateMajor = ({ isOpen, onClose, isEdit, currentId }) => {
   const [form] = Form.useForm();
+  const [createMajor] = useMutation(CREATE_MAJOR);
+  const [updateMajor] = useMutation(UPDATE_MAJOR);
   const yupSync = converSchemaToAntdRule(schemaValidate);
+  const { data } = useQuery(GET_MAJOR, {
+    variables: {
+      getMajorId: currentId,
+    },
+    skip: currentId === null,
+    onCompleted: () => {
+      //loading false
+    },
+  });
+  const onSubmit = (values) => {
+    createMajor({
+      variables: {
+        majorInput: {
+          majorId: values.id,
+          name: values.name,
+          graduationDiploma: values.graduationDiploma,
+          time: parseFloat(values.time, 10),
+          createdAt: moment().format(DATE_TIME_FORMAT),
+          updatedAt: moment().format(DATE_TIME_FORMAT),
+        },
+      },
+      onCompleted: () => {
+        message.success("Thêm chuyên ngành thành công!");
+        form.resetFields();
+      },
+      onError: (error) => {
+        message.error(`${error.message}`);
+      },
+    });
+  };
+  const onUpdate = (values) => {
+    updateMajor({
+      variables: {
+        updateMajorId: currentId,
+        updateMajorInput: {
+          majorId: values.id,
+          name: values.name,
+          graduationDiploma: values.graduationDiploma,
+          time: parseFloat(values.time, 10),
+          updatedAt: moment().format(DATE_TIME_FORMAT),
+        },
+      },
+      onCompleted: () => {
+        message.success("Chỉnh sửa chuyên ngành thành công!");
+        form.resetFields();
+      },
+      onError: (error) => {
+        message.error(`${error.message}`);
+      },
+    });
+  };
+  useEffect(() => {
+    if (data) {
+      form.setFieldsValue({
+        id: data?.getMajor?.majorId,
+        name: data?.getMajor?.name,
+        graduationDiploma: data?.getMajor?.graduationDiploma,
+        time: data?.getMajor?.time,
+      });
+    }
+  }, [data, form]);
   return (
     <Modal
       title={
@@ -23,7 +91,22 @@ const FormCreateMajor = ({ isOpen, onClose, isEdit }) => {
         autoComplete="off"
         form={form}
         className="w-full mt-5"
+        onFinish={isEdit ? onUpdate : onSubmit}
       >
+        <Form.Item
+          name="id"
+          className="w-full"
+          label={
+            <Row>
+              Mã chuyên ngành
+              <Row className="text-red-500 ml-1">*</Row>
+            </Row>
+          }
+          required={false}
+          rules={[yupSync]}
+        >
+          <Input placeholder="CN001" className="rounded-[10px] h-[48px]" />
+        </Form.Item>
         <Form.Item
           name="name"
           className="w-full"

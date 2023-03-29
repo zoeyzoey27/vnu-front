@@ -1,7 +1,8 @@
 import * as Yup from "yup";
 
 export const schemaValidate = Yup.object().shape({
-  name: Yup.string().trim().required("Vui lòng nhập họ tên!"),
+  id: Yup.string().trim().required("Vui lòng nhập mã chuyên ngành!"),
+  name: Yup.string().trim().required("Vui lòng nhập tên chuyên ngành!"),
   graduationDiploma: Yup.string()
     .trim()
     .required("Vui lòng nhập văn bằng tốt nghiệp!"),

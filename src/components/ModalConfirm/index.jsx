@@ -1,7 +1,7 @@
 import { Modal, Row, Button } from "antd";
 import { GrFormClose } from "react-icons/gr";
 
-const ModalConfirm = ({ isOpen, setIsOpen, message }) => {
+const ModalConfirm = ({ isOpen, setIsOpen, message, onSubmit }) => {
   return (
     <Modal
       title={<Row className="text-xl">Thông báo</Row>}
@@ -23,7 +23,7 @@ const ModalConfirm = ({ isOpen, setIsOpen, message }) => {
         </Button>
         <Button
           size="large"
-          onClick={() => setIsOpen(false)}
+          onClick={onSubmit}
           className="!rounded-[15px] bg-[#015198] w-[100px] !text-white !border-0 !outline-0 hover:opacity-90"
         >
           Xác nhận

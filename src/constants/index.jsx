@@ -1,8 +1,18 @@
+import moment from "moment";
 import { MdOutlineSchool } from "react-icons/md";
 import { BiBookReader } from "react-icons/bi";
 import { BsPeople } from "react-icons/bs";
 import { RiShieldUserLine } from "react-icons/ri";
 
+export const DATE_TIME_FORMAT = "DD/MM/YYYY HH:mm";
+export const ACTIVE = "ACTIVE";
+export const SUSPEND = "SUSPEND";
+export const PAGE_DEFAULT = 1;
+export const PAGE_SIZE_DEFAULT = 10;
+export const SKIP_DEFAULT = 0;
+export const convertTimeToString = (value) => {
+  return value ? moment(value).format("DD/MM/YYYY") : "";
+};
 export const menuList = [
   {
     key: "/majors",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Row,
   Select,
@@ -10,7 +10,7 @@ import {
   Dropdown,
   Button,
 } from "antd";
-import { roles } from "../../constants";
+import { ACTIVE, roles } from "../../constants";
 import "./style.css";
 import { FiSearch, FiEdit } from "react-icons/fi";
 import { MdDelete } from "react-icons/md";
@@ -20,9 +20,13 @@ import { TbLock, TbLockOpen } from "react-icons/tb";
 import ModalConfirm from "../../components/ModalConfirm";
 import FormAddUser from "../../components/FormAddUser";
 import FormEditUser from "../../components/FormEditUser";
+import { useQuery } from "@apollo/client";
+import { GET_USER_LIST } from "./graphql";
+import { PAGE_DEFAULT, PAGE_SIZE_DEFAULT, SKIP_DEFAULT } from "../../constants";
 
 const UserList = () => {
   const [form] = Form.useForm();
+  const [dataUsers, setDataUsers] = useState([]);
   const [isDeleteMulti, setIsDeleteMulti] = useState(false);
   const [isAddUser, setIsAddUser] = useState(false);
   const [isDeleteUser, setIsDeleteUser] = useState(false);
@@ -30,6 +34,52 @@ const UserList = () => {
   const [isActiveUser, setIsActiveUser] = useState(false);
   const [isEditUser, setIsEditUser] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [roleSelected, setRoleSelected] = useState(roles[0].id);
+  const [searchCondition, setSearchCondition] = useState({
+    items: {},
+    pageIndex: PAGE_DEFAULT,
+    pageSize: PAGE_SIZE_DEFAULT,
+  });
+  const { data: dataInit } = useQuery(GET_USER_LIST, {
+    variables: {
+      userInput: {},
+      skip: null,
+      take: null,
+    },
+  });
+  const { data } = useQuery(GET_USER_LIST, {
+    variables: {
+      userInput: searchCondition.items,
+      skip: searchCondition?.pageSize
+        ? searchCondition.pageSize * (searchCondition.pageIndex - 1)
+        : SKIP_DEFAULT,
+      take: searchCondition?.pageSize || PAGE_SIZE_DEFAULT,
+    },
+    onCompleted: () => {
+      //loading false
+    },
+  });
+  const onChangeSelect = (value) => {
+    setRoleSelected(value);
+    setSearchCondition((pre) => ({
+      ...pre,
+      items: {
+        fullName: form.getFieldsValue().searchInput,
+        role: value !== roles[0].id ? value : null,
+      },
+      skip: SKIP_DEFAULT
+    }));
+  };
+  const onSearch = (values) => {
+    setSearchCondition((pre) => ({
+      ...pre,
+      items: {
+        fullName: values.searchInput,
+        role: roleSelected !== roles[0].id ? roleSelected : null,
+      },
+      pageIndex: PAGE_DEFAULT,
+    }));
+  };
   const columns = [
     {
       title: "Họ tên",
@@ -38,6 +88,13 @@ const UserList = () => {
     {
       title: "Quyền",
       dataIndex: "role",
+      render: (role) => (
+        <>
+          {roles.map((item) =>
+            item.id === role ? <Row key={item.id}>{item.name}</Row> : null
+          )}
+        </>
+      ),
     },
     {
       title: "Email",
@@ -50,6 +107,13 @@ const UserList = () => {
     {
       title: "Trạng thái",
       dataIndex: "status",
+      render: (status) => (
+        <Row
+          className={`${status === ACTIVE ? "text-green-500" : "text-red-500"}`}
+        >
+          {status === ACTIVE ? "Đã kích hoạt" : "Đang khóa"}
+        </Row>
+      ),
     },
     {
       title: "",
@@ -99,67 +163,57 @@ const UserList = () => {
       width: "20px",
     },
   ];
-  const data = [
-    {
-      key: "1",
-      name: "John Brown",
-      role: "Quản trị viên",
-      email: "admin@gmail.com",
-      classes: "",
-      status: "Đã kích hoạt",
-    },
-    {
-      key: "2",
-      name: "Jim Green",
-      role: "Quản trị viên",
-      email: "admin@gmail.com",
-      classes: "",
-      status: "Đã kích hoạt",
-    },
-    {
-      key: "3",
-      name: "Joe Black",
-      role: "Giảng viên",
-      email: "teacher@gmail.com",
-      classes: "Class A",
-      status: "Đã kích hoạt",
-    },
-    {
-      key: "4",
-      name: "Disabled User",
-      role: "Giảng viên",
-      email: "teacher@gmail.com",
-      classes: "",
-      status: "Khóa",
-    },
-  ];
   const onSelectChange = (newSelectedRowKeys) => {
-    console.log("selectedRowKeys changed: ", newSelectedRowKeys);
     setSelectedRowKeys(newSelectedRowKeys);
   };
   const rowSelection = {
     selectedRowKeys,
     onChange: onSelectChange,
   };
+  const onChangePagination = (page, limit) => {
+    setSearchCondition({
+      ...searchCondition,
+      pageIndex: page,
+      pageSize: limit,
+    });
+  };
+  useEffect(() => {
+    if (data) {
+      const items = data?.getAllUsers?.map((item) => {
+        return {
+          name: item?.fullName,
+          email: item?.email,
+          classes: item?.userClass?.name,
+          role: item?.role,
+          status: item?.status,
+        };
+      });
+      setDataUsers(items);
+    }
+  }, [data]);
   return (
     <Row className="flex flex-col w-full h-full bg-white p-5 !rounded-[15px] shadow-lg relative">
       <Row className="text-[20px] font-bold">Quản lý người dùng</Row>
       <Row className="my-5 flex items-center justify-between">
-        <Select defaultValue="ALL" className="w-[150px] selectRole">
+        <Select
+          value={roleSelected}
+          className="w-[150px] selectRole"
+          onChange={(value) => onChangeSelect(value)}
+        >
           {roles.map((role) => (
             <Select.Option
               className={`${role?.id === "SUPER_ADMIN" && "!hidden"}`}
               key={role?.id}
+              value={role?.id}
             >
               {role?.name}
             </Select.Option>
           ))}
         </Select>
         <Row className="flex items-center">
-          <Form form={form} className="mr-5">
-            <Form.Item className="!my-0">
+          <Form form={form} onFinish={onSearch} className="mr-5">
+            <Form.Item className="!my-0" name="searchInput">
               <Input
-                name="searchInput"
                 placeholder="Tìm kiếm..."
                 className="!rounded-[30px]"
                 suffix={<FiSearch className="text-[#d9d9d9] text-[16px]" />}
@@ -190,15 +244,15 @@ const UserList = () => {
         rowKey="id"
         rowSelection={rowSelection}
         columns={columns}
-        dataSource={data}
+        dataSource={dataUsers}
         pagination={false}
         scroll={{ x: "max-content" }}
       />
       <Pagination
-        current={1}
-        pageSize={10}
-        total={4}
-        onChange={() => {}}
+        current={searchCondition?.pageIndex}
+        pageSize={searchCondition?.pageSize}
+        total={dataInit?.getAllUsers?.length}
+        onChange={onChangePagination}
         className="mt-10 w-full flex justify-end absolute bottom-5 right-5"
       />
       <ModalConfirm
