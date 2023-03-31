@@ -13,6 +13,7 @@ export const SKIP_DEFAULT = 0;
 export const convertTimeToString = (value) => {
   return value ? moment(value).format("DD/MM/YYYY") : "";
 };
+export const PHONE_REG_EXP = /^(\+?\d{0,11})?\s?-?\s?(\(?\d{11}\)?)?$/;
 export const menuList = [
   {
     key: "/majors",

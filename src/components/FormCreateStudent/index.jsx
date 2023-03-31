@@ -4,22 +4,46 @@ import { GrFormClose } from "react-icons/gr";
 import { schemaValidate } from "../../validations/CreateStudent";
 import { converSchemaToAntdRule } from "../../validations";
 import { useMutation, useQuery } from "@apollo/client";
-import { CREATE_STUDENT, GET_MAJOR_LIST } from "./graphql";
+import {
+  CREATE_STUDENT,
+  GET_MAJOR_LIST,
+  GET_STUDENT,
+  UPDATE_STUDENT,
+} from "./graphql";
 import { DATE_TIME_FORMAT } from "../../constants";
 import moment from "moment";
 import FormSelectClass from "../FormSelectClass";
 
-const FormCreateStudent = ({ isOpen, onClose, isEdit, listClass }) => {
+const FormCreateStudent = ({
+  isOpen,
+  onClose,
+  isEdit,
+  listClass,
+  refetchQueries,
+  setLoading,
+  currentId,
+}) => {
   const [form] = Form.useForm();
   const [dataMajors, setDataMajors] = useState([]);
   const [isSelectClass, setIsSelectClass] = useState(false);
+  const [classSelected, setClassSelected] = useState();
   const [createStudent] = useMutation(CREATE_STUDENT);
+  const [updateStudent] = useMutation(UPDATE_STUDENT);
   const yupSync = converSchemaToAntdRule(schemaValidate);
   const { data } = useQuery(GET_MAJOR_LIST, {
     variables: {
       name: "",
       skip: null,
       take: null,
+    },
+  });
+  const { data: dataStudent } = useQuery(GET_STUDENT, {
+    variables: {
+      getStudentId: currentId,
+    },
+    skip: currentId === null,
+    onCompleted: () => {
+      setLoading(false);
     },
   });
   useEffect(() => {
@@ -34,6 +58,7 @@ const FormCreateStudent = ({ isOpen, onClose, isEdit, listClass }) => {
     }
   }, [data]);
   const onSubmit = async (values) => {
+    setLoading(true);
     await createStudent({
       variables: {
         createStudentInput: {
@@ -50,14 +75,62 @@ const FormCreateStudent = ({ isOpen, onClose, isEdit, listClass }) => {
         },
       },
       onCompleted: () => {
+        setLoading(false);
         message.success("Thêm sinh viên thành công!");
         form.resetFields();
+        onClose();
       },
       onError: (error) => {
+        setLoading(false);
+        message.error(`${error.message}`);
+      },
+      refetchQueries: refetchQueries(),
+    });
+  };
+  const onUpdate = async (values) => {
+    setLoading(true);
+    await updateStudent({
+      variables: {
+        updateStudentId: currentId,
+        updateStudentInput: {
+          studentId: values.id,
+          name: values.name,
+          gender: values.gender,
+          email: values.email,
+          phoneNumber: values.phone,
+          address: values.address,
+          classId: values.classId,
+          majorId: values.major,
+          updatedAt: moment().format(DATE_TIME_FORMAT),
+        },
+      },
+      onCompleted: () => {
+        setLoading(false);
+        message.success("Chỉnh sửa sinh viên thành công!");
+        onClose();
+      },
+      onError: (error) => {
+        setLoading(false);
         message.error(`${error.message}`);
       },
     });
   };
+  useEffect(() => {
+    if (dataStudent) {
+      form.setFieldsValue({
+        id: dataStudent?.getStudent?.studentId,
+        name: dataStudent?.getStudent?.name,
+        gender: dataStudent?.getStudent?.gender,
+        email: dataStudent?.getStudent?.email,
+        phone: dataStudent?.getStudent?.phoneNumber,
+        address: dataStudent?.getStudent?.address,
+        major: dataStudent?.getStudent?.major?.id,
+        class: dataStudent?.getStudent?.class?.name,
+        classId: dataStudent?.getStudent?.class?.id,
+      });
+      setClassSelected(dataStudent?.getStudent?.class?.id);
+    }
+  }, [dataStudent, form]);
   return (
     <>
       <Modal
@@ -77,7 +150,7 @@ const FormCreateStudent = ({ isOpen, onClose, isEdit, listClass }) => {
             autoComplete="off"
             form={form}
             className="w-full px-[24px]"
-            onFinish={onSubmit}
+            onFinish={isEdit ? onUpdate : onSubmit}
           >
             <Form.Item
               name="id"
@@ -109,7 +182,7 @@ const FormCreateStudent = ({ isOpen, onClose, isEdit, listClass }) => {
               rules={[yupSync]}
             >
               <Input
-                placeholder="Class A"
+                placeholder="Student"
                 className="rounded-[10px] h-[48px]"
               />
             </Form.Item>
@@ -166,6 +239,7 @@ const FormCreateStudent = ({ isOpen, onClose, isEdit, listClass }) => {
               className="w-full"
               label={<Row>Số điện thoại</Row>}
               required={false}
+              rules={[yupSync]}
             >
               <Input
                 placeholder="0123456789"
@@ -246,6 +320,7 @@ const FormCreateStudent = ({ isOpen, onClose, isEdit, listClass }) => {
         onClose={() => setIsSelectClass(false)}
         formCreateStudent={form}
         classList={listClass}
+        studentClass={classSelected}
       />
     </>
   );

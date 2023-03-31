@@ -27,3 +27,13 @@ export const GET_STUDENT_LIST = gql`
     }
   }
 `;
+export const DELETE_STUDENT = gql`
+  mutation DeleteStudent($deleteStudentId: ID!) {
+    deleteStudent(id: $deleteStudentId)
+  }
+`;
+export const DELETE_STUDENTS = gql`
+  mutation DeleteStudents($ids: [ID]!) {
+    deleteStudents(ids: $ids)
+  }
+`;

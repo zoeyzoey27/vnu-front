@@ -18,9 +18,11 @@ import FormCreateMajor from "../../components/FormCreateMajor";
 import { useQuery, useMutation } from "@apollo/client";
 import { PAGE_DEFAULT, PAGE_SIZE_DEFAULT, SKIP_DEFAULT } from "../../constants";
 import { DELETE_MAJOR, DELETE_MAJORS, GET_MAJOR_LIST } from "./graphql";
+import { useOutletContext } from "react-router-dom";
 
 const MajorList = () => {
   const [form] = Form.useForm();
+  const [setLoading] = useOutletContext();
   const [deleteMajor] = useMutation(DELETE_MAJOR);
   const [deleteMajors] = useMutation(DELETE_MAJORS);
   const [dataMajors, setDataMajors] = useState([]);
@@ -51,7 +53,11 @@ const MajorList = () => {
       take: searchCondition?.pageSize || PAGE_SIZE_DEFAULT,
     },
     onCompleted: () => {
-      //loading false
+      setLoading(false);
+    },
+    onError: (error) => {
+      message.error(`${error.message}`);
+      setLoading(false);
     },
   });
   const columns = [
@@ -81,6 +87,7 @@ const MajorList = () => {
             <Row className="flex flex-col bg-white rounded-[15px] shadow-lg w-[150px] p-2">
               <Row
                 onClick={() => {
+                  setLoading(true);
                   setIsEditMajor(true);
                   setCurrentId(record.id);
                 }}
@@ -113,6 +120,7 @@ const MajorList = () => {
     },
   ];
   const onSearch = (values) => {
+    setLoading(true);
     setSearchCondition((pre) => ({
       ...pre,
       name: values.searchInput,
@@ -127,40 +135,71 @@ const MajorList = () => {
     onChange: onSelectChange,
   };
   const onChangePagination = (page, limit) => {
+    setLoading(true);
     setSearchCondition({
       ...searchCondition,
       pageIndex: page,
       pageSize: limit,
     });
   };
+  const refetchQueries = () => {
+    return [
+      {
+        query: GET_MAJOR_LIST,
+        variables: {
+          name: searchCondition.name,
+          skip: searchCondition?.pageSize
+            ? searchCondition.pageSize * (searchCondition.pageIndex - 1)
+            : SKIP_DEFAULT,
+          take: searchCondition?.pageSize || PAGE_SIZE_DEFAULT,
+        },
+      },
+      {
+        query: GET_MAJOR_LIST,
+        variables: {
+          name: searchCondition.name,
+          skip: null,
+          take: null,
+        },
+      },
+    ];
+  };
   const onDelete = async () => {
+    setLoading(true);
     await deleteMajor({
       variables: {
         deleteMajorId: currentId,
       },
       onCompleted: () => {
+        setLoading(false);
         message.success("Xóa dữ liệu thành công!");
         setIsDeleteMajor(false);
       },
       onError: (err) => {
-        message.success(`${err.message}`);
+        setLoading(false);
+        message.error(`${err.message}`);
         setIsDeleteMajor(false);
       },
+      refetchQueries: refetchQueries(),
     });
   };
   const onDeleteMulti = async () => {
+    setLoading(true);
     await deleteMajors({
       variables: {
         ids: selectedRowKeys,
       },
       onCompleted: () => {
+        setLoading(false);
         message.success("Xóa dữ liệu thành công!");
         setIsDeleteMulti(false);
       },
       onError: (err) => {
-        message.success(`${err.message}`);
+        setLoading(false);
+        message.error(`${err.message}`);
         setIsDeleteMulti(false);
       },
+      refetchQueries: refetchQueries(),
     });
   };
   useEffect(() => {
@@ -177,6 +216,10 @@ const MajorList = () => {
       setDataMajors(items);
     }
   }, [data]);
+  useEffect(() => {
+    setLoading(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <Row className="flex flex-col w-full h-full bg-white p-5 !rounded-[15px] shadow-lg relative">
       <Row className="text-[20px] font-bold">Quản lý chuyên ngành</Row>
@@ -239,12 +282,15 @@ const MajorList = () => {
       <FormCreateMajor
         isOpen={isCreateMajor}
         onClose={() => setIsCreateMajor(false)}
+        setLoading={setLoading}
+        refetchQueries={refetchQueries}
       />
       <FormCreateMajor
         isOpen={isEditMajor}
         onClose={() => setIsEditMajor(false)}
         isEdit
         currentId={currentId}
+        setLoading={setLoading}
       />
     </Row>
   );

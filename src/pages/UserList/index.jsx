@@ -9,6 +9,7 @@ import {
   Pagination,
   Dropdown,
   Button,
+  message
 } from "antd";
 import { ACTIVE, roles } from "../../constants";
 import "./style.css";
@@ -23,9 +24,11 @@ import FormEditUser from "../../components/FormEditUser";
 import { useQuery } from "@apollo/client";
 import { GET_USER_LIST } from "./graphql";
 import { PAGE_DEFAULT, PAGE_SIZE_DEFAULT, SKIP_DEFAULT } from "../../constants";
+import { useOutletContext } from "react-router-dom";
 
 const UserList = () => {
   const [form] = Form.useForm();
+  const [setLoading] = useOutletContext();
   const [dataUsers, setDataUsers] = useState([]);
   const [isDeleteMulti, setIsDeleteMulti] = useState(false);
   const [isAddUser, setIsAddUser] = useState(false);
@@ -56,10 +59,15 @@ const UserList = () => {
       take: searchCondition?.pageSize || PAGE_SIZE_DEFAULT,
     },
     onCompleted: () => {
-      //loading false
+      setLoading(false);
+    },
+    onError: (error) => {
+      message.error(`${error.message}`);
+      setLoading(false);
     },
   });
   const onChangeSelect = (value) => {
+    setLoading(true);
     setRoleSelected(value);
     setSearchCondition((pre) => ({
       ...pre,
@@ -71,6 +79,7 @@ const UserList = () => {
     }));
   };
   const onSearch = (values) => {
+    setLoading(true);
     setSearchCondition((pre) => ({
       ...pre,
       items: {
@@ -171,6 +180,7 @@ const UserList = () => {
     onChange: onSelectChange,
   };
   const onChangePagination = (page, limit) => {
+    setLoading(true);
     setSearchCondition({
       ...searchCondition,
       pageIndex: page,
@@ -191,6 +201,10 @@ const UserList = () => {
       setDataUsers(items);
     }
   }, [data]);
+  useEffect(() => {
+    setLoading(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
   return (
     <Row className="flex flex-col w-full h-full bg-white p-5 !rounded-[15px] shadow-lg relative">
       <Row className="text-[20px] font-bold">Quản lý người dùng</Row>

@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { Modal, Row, Form, Input, Button } from "antd";
 import { GrFormClose } from "react-icons/gr";
 
-const FormSelectClass = ({ isOpen, onClose, classList, formCreateStudent }) => {
+const FormSelectClass = ({
+  isOpen,
+  onClose,
+  classList,
+  formCreateStudent,
+  studentClass,
+}) => {
   const [form] = Form.useForm();
   const [listItems, setListItems] = useState([]);
   const [classSelected, setClassSelected] = useState();
@@ -10,6 +16,7 @@ const FormSelectClass = ({ isOpen, onClose, classList, formCreateStudent }) => {
     const classItem = classList.find((item) => item?.id === classSelected);
     formCreateStudent?.setFieldValue("class", classItem?.name);
     formCreateStudent?.setFieldValue("classId", classItem?.id);
+    setClassSelected();
     onClose();
   };
   const onSearch = (values) => {
@@ -22,6 +29,11 @@ const FormSelectClass = ({ isOpen, onClose, classList, formCreateStudent }) => {
     if (classList && !formCreateStudent.getFieldsValue().searchInput)
       setListItems(classList);
   }, [classList, formCreateStudent]);
+  useEffect(() => {
+    if (studentClass) {
+      setClassSelected(studentClass);
+    }
+  }, [studentClass]);
   return (
     <Modal
       title={<Row className="text-xl">Chọn lớp</Row>}

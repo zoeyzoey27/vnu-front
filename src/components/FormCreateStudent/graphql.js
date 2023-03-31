@@ -31,4 +31,51 @@ export const GET_MAJOR_LIST = gql`
     }
   }
 `;
-
+export const GET_STUDENT = gql`
+  query GetStudent($getStudentId: ID!) {
+    getStudent(id: $getStudentId) {
+      id
+      studentId
+      name
+      email
+      gender
+      phoneNumber
+      address
+      class {
+        id
+        name
+      }
+      major {
+        id
+        name
+      }
+    }
+  }
+`;
+export const UPDATE_STUDENT = gql`
+  mutation UpdateStudent(
+    $updateStudentId: ID!
+    $updateStudentInput: UpdateStudentInput
+  ) {
+    updateStudent(
+      id: $updateStudentId
+      updateStudentInput: $updateStudentInput
+    ) {
+      id
+      studentId
+      name
+      gender
+      email
+      phoneNumber
+      address
+      major {
+        id
+        name
+      }
+      class {
+        id
+        name
+      }
+    }
+  }
+`;

@@ -6,20 +6,43 @@ import { converSchemaToAntdRule } from "../../validations";
 import { useState } from "react";
 import FormSelectTeacher from "../FormSelectTeacher";
 import FormSelectStudent from "../FormSelectStudent";
-import { useMutation } from "@apollo/client";
-import { CREATE_CLASS, GET_USER_LIST } from "./graphql";
+import { useMutation, useQuery } from "@apollo/client";
+import {
+  CREATE_CLASS,
+  GET_CLASS,
+  GET_STUDENT_LIST,
+  GET_USER_LIST,
+  UPDATE_CLASS,
+} from "./graphql";
 import { DATE_TIME_FORMAT } from "../../constants";
 import moment from "moment";
-import { useQuery } from "@apollo/client";
 
-const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
+const FormCreateClass = ({
+  isOpen,
+  onClose,
+  isEdit,
+  setLoading,
+  currentId,
+}) => {
   const [form] = Form.useForm();
   const [createClass] = useMutation(CREATE_CLASS);
+  const [updateClass] = useMutation(UPDATE_CLASS);
   const [isSelectTeacher, setIsSelectTeacher] = useState(false);
   const [isSelectStudent, setIsSelectStudent] = useState(false);
   const [teacherList, setTeacherList] = useState([]);
   const [studentList, setStudentList] = useState([]);
+  const [studentListSelected, setStudentListSelected] = useState([]);
+  const [teacherSelected, setTeacherSelected] = useState([]);
   const yupSync = converSchemaToAntdRule(schemaValidate);
+  const { data } = useQuery(GET_CLASS, {
+    variables: {
+      getClassId: currentId,
+    },
+    skip: currentId === null,
+    onCompleted: () => {
+      setLoading(false);
+    },
+  });
   const { data: dataUser } = useQuery(GET_USER_LIST, {
     variables: {
       userInput: {
@@ -30,24 +53,63 @@ const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
       take: null,
     },
   });
+  const { data: dataStudent } = useQuery(GET_STUDENT_LIST, {
+    variables: {
+      studentInput: {
+        classId: "",
+        name: "",
+      },
+      skip: null,
+      take: null,
+    },
+  });
   const onSubmit = (values) => {
+    setLoading(true);
     createClass({
       variables: {
         createClassInput: {
           classId: values.id,
           name: values.name,
           teacherId: values.teacherId,
-          studentIds: [],
+          studentIds: values.studentId,
           createdAt: moment().format(DATE_TIME_FORMAT),
           updatedAt: moment().format(DATE_TIME_FORMAT),
         },
       },
       onCompleted: () => {
+        setLoading(false);
         message.success("Thêm lớp thành công!");
         form.resetFields();
         onClose();
+        window.location.reload();
       },
       onError: (error) => {
+        setLoading(false);
+        message.error(`${error.message}`);
+      },
+    });
+  };
+  const onUpdate = (values) => {
+    setLoading(true);
+    updateClass({
+      variables: {
+        updateClassId: currentId,
+        updateClassInput: {
+          classId: values.id,
+          name: values.name,
+          teacherId: values.teacherId,
+          studentIds: values.studentId,
+          updatedAt: moment().format(DATE_TIME_FORMAT),
+        },
+      },
+      onCompleted: () => {
+        setLoading(false);
+        message.success("Chỉnh sửa lớp thành công!");
+        onClose();
+        window.location.reload();
+      },
+      onError: (error) => {
+        setLoading(false);
         message.error(`${error.message}`);
       },
     });
@@ -58,16 +120,60 @@ const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
         return {
           id: item.id,
           name: item.fullName,
-          userClass: item.userClass
+          userClass: item.userClass,
         };
       });
-      setTeacherList(
-        items.filter(
-          (item) => item.userClass === null || item.userClass === undefined
-        )
-      );
+      if (isEdit && currentId) {
+        setTeacherList(
+          items.filter(
+            (item) =>
+              item.userClass === null || item?.userClass?.id === currentId
+          )
+        );
+      } else {
+        setTeacherList(items.filter((item) => item.userClass === null));
+      }
     }
-  }, [dataUser]);
+  }, [dataUser, currentId, isEdit]);
+  useEffect(() => {
+    if (dataStudent) {
+      const items = dataStudent?.getAllStudents?.map((item) => {
+        return {
+          id: item.id,
+          studentId: item.studentId,
+          name: item.name,
+          class: item.class,
+        };
+      });
+      if (isEdit && currentId) {
+        setStudentList(
+          items.filter(
+            (item) => item.class === null || item?.class?.id === currentId
+          )
+        );
+      } else {
+        setStudentList(items.filter((item) => item.class === null));
+      }
+    }
+  }, [dataStudent, currentId, isEdit]);
+  useEffect(() => {
+    if (data) {
+      const studentIds = [];
+      data?.getClass?.students?.forEach((item) => {
+        studentIds.push(item.id);
+      });
+      form.setFieldsValue({
+        id: data?.getClass?.classId,
+        name: data?.getClass?.name,
+        teacher: data?.getClass?.teacher?.fullName,
+        teacherId: data?.getClass?.teacher?.id,
+        students: studentIds.length > 0 ? studentIds.length : "",
+        studentId: studentIds,
+      });
+      setStudentListSelected(studentIds);
+      setTeacherSelected(data?.getClass?.teacher?.id);
+    }
+  }, [data, form]);
   return (
     <>
       <Modal
@@ -86,7 +192,7 @@ const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
           autoComplete="off"
           form={form}
           className="w-full mt-5"
-          onFinish={onSubmit}
+          onFinish={isEdit ? onUpdate : onSubmit}
         >
           <Form.Item
             name="id"
@@ -145,6 +251,9 @@ const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
               className="rounded-[10px] h-[48px]"
             />
           </Form.Item>
+          <Form.Item name="studentId" className="hidden" required={false}>
+            <Input readOnly className="rounded-[10px] h-[48px]" />
+          </Form.Item>
           <Form.Item className="!mb-0">
             <Button
               htmlType="submit"
@@ -160,11 +269,14 @@ const FormCreateClass = ({ isOpen, onClose, isEdit = false }) => {
         teacherList={teacherList}
         onClose={() => setIsSelectTeacher(false)}
         formCreateClass={form}
+        userSelected={teacherSelected}
       />
       <FormSelectStudent
         isOpen={isSelectStudent}
         studentList={studentList}
         onClose={() => setIsSelectStudent(false)}
+        formCreateClass={form}
+        studentListSelected={studentListSelected}
       />
     </>
   );

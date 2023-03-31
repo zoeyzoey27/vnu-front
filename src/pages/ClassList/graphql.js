@@ -17,3 +17,13 @@ export const GET_CLASS_LIST = gql`
     }
   }
 `;
+export const DELETE_CLASS = gql`
+  mutation DeleteClass($deleteClassId: ID!) {
+    deleteClass(id: $deleteClassId)
+  }
+`;
+export const DELETE_CLASSES = gql`
+  mutation DeleteClasses($ids: [ID]!) {
+    deleteClasses(ids: $ids)
+  }
+`;

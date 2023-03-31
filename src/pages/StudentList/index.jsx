@@ -9,6 +9,7 @@ import {
   Table,
   Pagination,
   Select,
+  message,
 } from "antd";
 import { FiSearch, FiEdit } from "react-icons/fi";
 import { MdDelete, MdAddCircle } from "react-icons/md";
@@ -17,12 +18,17 @@ import { BiDetail } from "react-icons/bi";
 import ModalConfirm from "../../components/ModalConfirm";
 import FormCreateStudent from "../../components/FormCreateStudent";
 import DetailStudent from "../../components/DetailStudent";
-import { useQuery } from "@apollo/client";
-import { GET_CLASS_LIST, GET_STUDENT_LIST } from "./graphql";
+import { useMutation, useQuery } from "@apollo/client";
+import { DELETE_STUDENT, DELETE_STUDENTS, GET_CLASS_LIST, GET_STUDENT_LIST } from "./graphql";
 import { PAGE_DEFAULT, PAGE_SIZE_DEFAULT, SKIP_DEFAULT } from "../../constants";
+import { useOutletContext } from "react-router-dom";
 
 const StudentList = () => {
   const [form] = Form.useForm();
+  const [deleteStudent] = useMutation(DELETE_STUDENT);
+  const [deleteStudents] = useMutation(DELETE_STUDENTS);
+  const [setLoading] = useOutletContext();
+  const [currentId, setCurrentId] = useState();
   const [classSelected, setClassSelected] = useState();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [isDeleteMulti, setIsDeleteMulti] = useState(false);
@@ -46,7 +52,7 @@ const StudentList = () => {
   });
   const { data: dataInit } = useQuery(GET_STUDENT_LIST, {
     variables: {
-      studentInput: {},
+      studentInput: searchCondition.items,
       skip: null,
       take: null,
     },
@@ -60,13 +66,39 @@ const StudentList = () => {
       take: searchCondition?.pageSize || PAGE_SIZE_DEFAULT,
     },
     onCompleted: () => {
-      //loading false
+      setLoading(false);
+    },
+    onError: (error) => {
+      message.error(`${error.message}`);
+      setLoading(false);
     },
   });
+  const refetchQueries = () => {
+    return [
+      {
+        query: GET_STUDENT_LIST,
+        variables: {
+          studentInput: searchCondition.items,
+          skip: searchCondition?.pageSize
+            ? searchCondition.pageSize * (searchCondition.pageIndex - 1)
+            : SKIP_DEFAULT,
+          take: searchCondition?.pageSize || PAGE_SIZE_DEFAULT,
+        },
+      },
+      {
+        query: GET_STUDENT_LIST,
+        variables: {
+          studentInput: searchCondition.items,
+          skip: null,
+          take: null,
+        },
+      },
+    ];
+  };
   const columns = [
     {
       title: "Mã sinh viên",
-      dataIndex: "id",
+      dataIndex: "studentId",
     },
     {
       title: "Tên sinh viên",
@@ -88,13 +120,17 @@ const StudentList = () => {
     {
       title: "",
       dataIndex: "menu",
-      render: () => (
+      render: (_, record) => (
         <Dropdown
           placement="bottomRight"
           dropdownRender={() => (
             <Row className="flex flex-col bg-white rounded-[15px] shadow-lg w-[150px] p-2">
               <Row
-                onClick={() => setIsOpenDetail(true)}
+                onClick={() => {
+                  setLoading(true);
+                  setCurrentId(record.id);
+                  setIsOpenDetail(true);
+                }}
                 className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
               >
                 <Row className="p-2 bg-black text-white text-[16px] rounded-full mr-2">
@@ -103,7 +139,11 @@ const StudentList = () => {
                 Xem chi tiết
               </Row>
               <Row
-                onClick={() => setIsEditStudent(true)}
+                onClick={() => {
+                  setLoading(true);
+                  setCurrentId(record.id);
+                  setIsEditStudent(true);
+                }}
                 className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
               >
                 <Row className="p-2 bg-black text-white text-[16px] rounded-full mr-2">
@@ -112,7 +152,10 @@ const StudentList = () => {
                 Chỉnh sửa
               </Row>
               <Row
-                onClick={() => setIsDeleteStudent(true)}
+                onClick={() => {
+                  setCurrentId(record.id);
+                  setIsDeleteStudent(true);
+                }}
                 className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
               >
                 <Row className="p-2 bg-red-500 text-white text-[16px] rounded-full mr-2">
@@ -149,6 +192,7 @@ const StudentList = () => {
     }
   }, [dataClass]);
   const onChangeSelect = (value) => {
+    setLoading(true);
     setClassSelected(value);
     setSearchCondition((pre) => ({
       ...pre,
@@ -160,6 +204,7 @@ const StudentList = () => {
     }));
   };
   const onSearch = (values) => {
+    setLoading(true);
     setSearchCondition((pre) => ({
       ...pre,
       items: {
@@ -170,6 +215,7 @@ const StudentList = () => {
     }));
   };
   const onChangePagination = (page, limit) => {
+    setLoading(true);
     setSearchCondition({
       ...searchCondition,
       pageIndex: page,
@@ -180,7 +226,8 @@ const StudentList = () => {
     if (data) {
       const items = data?.getAllStudents?.map((item) => {
         return {
-          id: item?.studentId,
+          id: item?.id,
+          studentId: item?.studentId,
           name: item?.name,
           gender: item?.gender,
           class: item?.class?.name,
@@ -190,6 +237,48 @@ const StudentList = () => {
       setDataStudents(items);
     }
   }, [data]);
+  useEffect(() => {
+    setLoading(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const onDelete = async () => {
+    setLoading(true);
+    await deleteStudent({
+      variables: {
+        deleteStudentId: currentId,
+      },
+      onCompleted: () => {
+        setLoading(false);
+        message.success("Xóa dữ liệu thành công!");
+        setIsDeleteStudent(false);
+      },
+      onError: (err) => {
+        setLoading(false);
+        message.error(`${err.message}`);
+        setIsDeleteStudent(false);
+      },
+      refetchQueries: refetchQueries(),
+    });
+  };
+  const onDeleteMulti = async () => {
+    setLoading(true);
+    await deleteStudents({
+      variables: {
+        ids: selectedRowKeys,
+      },
+      onCompleted: () => {
+        setLoading(false);
+        message.success("Xóa dữ liệu thành công!");
+        setIsDeleteMulti(false);
+      },
+      onError: (err) => {
+        setLoading(false);
+        message.error(`${err.message}`);
+        setIsDeleteMulti(false);
+      },
+      refetchQueries: refetchQueries(),
+    });
+  };
   return (
     <Row className="flex flex-col w-full h-full bg-white p-5 !rounded-[15px] shadow-lg relative">
       <Row className="text-[20px] font-bold">Quản lý sinh viên</Row>
@@ -210,9 +299,8 @@ const StudentList = () => {
         </Select>
         <Row className="flex items-center">
           <Form form={form} className="mr-5" onFinish={onSearch}>
-            <Form.Item className="!my-0">
+            <Form.Item className="!my-0" name="searchInput">
               <Input
-                name="searchInput"
                 placeholder="Tìm kiếm..."
                 className="!rounded-[30px]"
                 suffix={<FiSearch className="text-[#d9d9d9] text-[16px]" />}
@@ -258,25 +346,34 @@ const StudentList = () => {
         isOpen={isDeleteMulti}
         setIsOpen={setIsDeleteMulti}
         message="Bạn có chắc chắn muốn xóa dữ liệu không?"
+        onSubmit={onDeleteMulti}
       />
       <ModalConfirm
         isOpen={isDeleteStudent}
         setIsOpen={setIsDeleteStudent}
         message="Bạn có chắc chắn muốn xóa sinh viên này không?"
+        onSubmit={onDelete}
       />
       <FormCreateStudent
         isOpen={isCreateStudent}
         listClass={dataClasses}
         onClose={() => setIsCreateStudent(false)}
+        setLoading={setLoading}
+        refetchQueries={refetchQueries}
       />
       <FormCreateStudent
         isOpen={isEditStudent}
         onClose={() => setIsEditStudent(false)}
+        setLoading={setLoading}
+        listClass={dataClasses}
         isEdit
+        currentId={currentId}
       />
       <DetailStudent
         isOpen={isOpenDetail}
         onClose={() => setIsOpenDetail(false)}
+        studentId={currentId}
+        setLoading={setLoading}
       />
     </Row>
   );

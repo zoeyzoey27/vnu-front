@@ -8,7 +8,7 @@ import { CREATE_MAJOR, GET_MAJOR, UPDATE_MAJOR } from "./graphql";
 import moment from "moment";
 import { DATE_TIME_FORMAT } from "../../constants";
 
-const FormCreateMajor = ({ isOpen, onClose, isEdit, currentId }) => {
+const FormCreateMajor = ({ isOpen, onClose, isEdit, currentId, setLoading, refetchQueries }) => {
   const [form] = Form.useForm();
   const [createMajor] = useMutation(CREATE_MAJOR);
   const [updateMajor] = useMutation(UPDATE_MAJOR);
@@ -19,10 +19,11 @@ const FormCreateMajor = ({ isOpen, onClose, isEdit, currentId }) => {
     },
     skip: currentId === null,
     onCompleted: () => {
-      //loading false
+      setLoading(false);
     },
   });
   const onSubmit = (values) => {
+    setLoading(true);
     createMajor({
       variables: {
         majorInput: {
@@ -35,15 +36,20 @@ const FormCreateMajor = ({ isOpen, onClose, isEdit, currentId }) => {
         },
       },
       onCompleted: () => {
+        setLoading(false);
         message.success("Thêm chuyên ngành thành công!");
         form.resetFields();
+        onClose();
       },
       onError: (error) => {
+        setLoading(false);
         message.error(`${error.message}`);
       },
+      refetchQueries: refetchQueries(),
     });
   };
   const onUpdate = (values) => {
+    setLoading(true);
     updateMajor({
       variables: {
         updateMajorId: currentId,
@@ -56,10 +62,13 @@ const FormCreateMajor = ({ isOpen, onClose, isEdit, currentId }) => {
         },
       },
       onCompleted: () => {
+        setLoading(false);
         message.success("Chỉnh sửa chuyên ngành thành công!");
         form.resetFields();
+        onClose();
       },
       onError: (error) => {
+        setLoading(false);
         message.error(`${error.message}`);
       },
     });

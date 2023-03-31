@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal, Row, Form, Input, Button } from "antd";
 import { GrFormClose } from "react-icons/gr";
 
@@ -7,9 +7,10 @@ const FormSelectTeacher = ({
   onClose,
   teacherList,
   formCreateClass,
+  userSelected,
 }) => {
   const [form] = Form.useForm();
-  const [listItems, setListItems] = useState(teacherList);
+  const [listItems, setListItems] = useState();
   const [teacherSelected, setTeacherSelected] = useState();
   const onSubmit = () => {
     const teacher = teacherList.find((item) => item?.id === teacherSelected);
@@ -23,6 +24,13 @@ const FormSelectTeacher = ({
     );
     setListItems(items);
   };
+  useEffect(() => {
+    if (teacherList && !formCreateClass.getFieldsValue().searchInput)
+      setListItems(teacherList);
+  }, [teacherList, formCreateClass]);
+  useEffect(() => {
+    if (userSelected) setTeacherSelected(userSelected);
+  }, [userSelected]);
   return (
     <Modal
       title={<Row className="text-xl">Chọn cố vấn học tập</Row>}
