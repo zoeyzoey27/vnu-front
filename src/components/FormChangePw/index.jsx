@@ -1,11 +1,44 @@
-import { Modal, Row, Form, Input, Button } from "antd";
+import { Modal, Row, Form, Input, Button, message } from "antd";
 import { GrFormClose } from "react-icons/gr";
 import { schemaValidate } from "../../validations/ResetPw";
 import { converSchemaToAntdRule } from "../../validations";
+import { useMutation } from "@apollo/client";
+import { CHANGE_PASSWORD } from "./graphql";
 
-const FormChangePw = ({ isOpen, onClose }) => {
+const FormChangePw = ({ isOpen, onClose, setLoading, userId }) => {
   const [form] = Form.useForm();
+  const [changePassword] = useMutation(CHANGE_PASSWORD);
   const yupSync = converSchemaToAntdRule(schemaValidate);
+  const onSubmit = async (values) => {
+    if (values.newPassword === values.password) {
+      message.error("Vui lòng nhập mật khẩu mới khác với mật khẩu hiện tại!");
+    }
+    else {
+      if (values.newPassword === values.passwordConfirm){
+        setLoading(true);
+        await changePassword({
+          variables: {
+            userChangePasswordId: userId,
+            oldPassword: values.password,
+            newPassword: values.newPassword,
+          },
+          onCompleted: () => {
+            setLoading(false);
+            message.success("Đổi mật khẩu thành công!");
+            form.resetFields();
+            onClose();
+          },
+          onError: (error) => {
+            setLoading(false);
+            message.error(`${error.message}`);
+          },
+        });
+      }
+      else {
+        message.error("Vui lòng nhập mật khẩu khớp với mật khẩu vừa nhập!");
+      }
+    }
+  };
   return (
     <Modal
       title={<Row className="text-xl">Thay đổi mật khẩu</Row>}
@@ -19,6 +52,7 @@ const FormChangePw = ({ isOpen, onClose }) => {
         autoComplete="off"
         form={form}
         className="w-full mt-5"
+        onFinish={onSubmit}
       >
         <Form.Item
           name="password"
@@ -32,9 +66,14 @@ const FormChangePw = ({ isOpen, onClose }) => {
           required={false}
           rules={[yupSync]}
         >
-          <Input placeholder="******" className="rounded-[10px] h-[48px]" />
+          <Input
+            placeholder="******"
+            type="password"
+            className="rounded-[10px] h-[48px]"
+          />
         </Form.Item>
         <Form.Item
+          id="newPassword"
           name="newPassword"
           className="w-full"
           label={
@@ -46,9 +85,14 @@ const FormChangePw = ({ isOpen, onClose }) => {
           required={false}
           rules={[yupSync]}
         >
-          <Input placeholder="******" className="rounded-[10px] h-[48px]" />
+          <Input
+            placeholder="******"
+            type="password"
+            className="rounded-[10px] h-[48px]"
+          />
         </Form.Item>
         <Form.Item
+          id="passwordConfirm"
           name="passwordConfirm"
           className="w-full"
           label={
@@ -60,7 +104,11 @@ const FormChangePw = ({ isOpen, onClose }) => {
           required={false}
           rules={[yupSync]}
         >
-          <Input placeholder="******" className="rounded-[10px] h-[48px]" />
+          <Input
+            placeholder="******"
+            type="password"
+            className="rounded-[10px] h-[48px]"
+          />
         </Form.Item>
         <Form.Item className="!mb-0">
           <Button

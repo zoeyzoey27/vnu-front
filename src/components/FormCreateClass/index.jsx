@@ -38,7 +38,7 @@ const FormCreateClass = ({
     variables: {
       getClassId: currentId,
     },
-    skip: currentId === null,
+    skip: currentId === null || currentId === undefined,
     onCompleted: () => {
       setLoading(false);
     },

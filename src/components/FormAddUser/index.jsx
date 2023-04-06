@@ -7,11 +7,12 @@ import { ADD_USER } from "./graphql";
 import moment from "moment";
 import { ACTIVE, DATE_TIME_FORMAT } from "../../constants";
 
-const FormAddUser = ({ isOpen, onClose }) => {
+const FormAddUser = ({ isOpen, onClose, refetchQueries, setLoading }) => {
   const [form] = Form.useForm();
   const [addUser] = useMutation(ADD_USER);
   const yupSync = converSchemaToAntdRule(schemaValidate);
   const onSubmit = (values) => {
+    setLoading(true);
     const customId = "US" + Math.floor(Math.random() * Date.now());
     addUser({
       variables: {
@@ -29,10 +30,14 @@ const FormAddUser = ({ isOpen, onClose }) => {
       onCompleted: () => {
         message.success("Thêm người dùng thành công!");
         form.resetFields();
+        setLoading(false);
+        onClose();
       },
       onError: (error) => {
+        setLoading(false);
         message.error(`${error.message}`);
       },
+      refetchQueries: refetchQueries(),
     });
   };
   return (
@@ -96,7 +101,11 @@ const FormAddUser = ({ isOpen, onClose }) => {
           required={false}
           rules={[yupSync]}
         >
-          <Input placeholder="******" className="rounded-[10px] h-[48px]" />
+          <Input
+            placeholder="******"
+            type="password"
+            className="rounded-[10px] h-[48px]"
+          />
         </Form.Item>
         <Form.Item
           name="role"

@@ -184,23 +184,25 @@ const MajorList = () => {
     });
   };
   const onDeleteMulti = async () => {
-    setLoading(true);
-    await deleteMajors({
-      variables: {
-        ids: selectedRowKeys,
-      },
-      onCompleted: () => {
-        setLoading(false);
-        message.success("Xóa dữ liệu thành công!");
-        setIsDeleteMulti(false);
-      },
-      onError: (err) => {
-        setLoading(false);
-        message.error(`${err.message}`);
-        setIsDeleteMulti(false);
-      },
-      refetchQueries: refetchQueries(),
-    });
+    if (selectedRowKeys.length > 0) {
+      setLoading(true);
+      await deleteMajors({
+        variables: {
+          ids: selectedRowKeys,
+        },
+        onCompleted: () => {
+          setLoading(false);
+          message.success("Xóa dữ liệu thành công!");
+          setIsDeleteMulti(false);
+        },
+        onError: (err) => {
+          setLoading(false);
+          message.error(`${err.message}`);
+          setIsDeleteMulti(false);
+        },
+        refetchQueries: refetchQueries(),
+      });
+    } else message.error("Vui lòng chọn chuyên ngành cần xóa!");
   };
   useEffect(() => {
     if (data) {

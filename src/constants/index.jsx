@@ -10,6 +10,10 @@ export const SUSPEND = "SUSPEND";
 export const PAGE_DEFAULT = 1;
 export const PAGE_SIZE_DEFAULT = 10;
 export const SKIP_DEFAULT = 0;
+export const INIT_INDEX = 1;
+export const BASE64 = 'base64';
+export const ASCII = 'ascii';
+
 export const convertTimeToString = (value) => {
   return value ? moment(value).format("DD/MM/YYYY") : "";
 };

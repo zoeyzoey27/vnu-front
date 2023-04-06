@@ -9,9 +9,9 @@ import {
   Pagination,
   Dropdown,
   Button,
-  message
+  message,
 } from "antd";
-import { ACTIVE, roles } from "../../constants";
+import { ACTIVE, SUSPEND, roles } from "../../constants";
 import "./style.css";
 import { FiSearch, FiEdit } from "react-icons/fi";
 import { MdDelete } from "react-icons/md";
@@ -21,13 +21,21 @@ import { TbLock, TbLockOpen } from "react-icons/tb";
 import ModalConfirm from "../../components/ModalConfirm";
 import FormAddUser from "../../components/FormAddUser";
 import FormEditUser from "../../components/FormEditUser";
-import { useQuery } from "@apollo/client";
-import { GET_USER_LIST } from "./graphql";
+import { useMutation, useQuery } from "@apollo/client";
+import {
+  DELETE_USER,
+  DELETE_USERS,
+  GET_USER_LIST,
+  UPDATE_USER_STATUS,
+} from "./graphql";
 import { PAGE_DEFAULT, PAGE_SIZE_DEFAULT, SKIP_DEFAULT } from "../../constants";
 import { useOutletContext } from "react-router-dom";
 
 const UserList = () => {
   const [form] = Form.useForm();
+  const [updateUserStatus] = useMutation(UPDATE_USER_STATUS);
+  const [deleteUser] = useMutation(DELETE_USER);
+  const [deleteUsers] = useMutation(DELETE_USERS);
   const [setLoading] = useOutletContext();
   const [dataUsers, setDataUsers] = useState([]);
   const [isDeleteMulti, setIsDeleteMulti] = useState(false);
@@ -38,6 +46,8 @@ const UserList = () => {
   const [isEditUser, setIsEditUser] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [roleSelected, setRoleSelected] = useState(roles[0].id);
+  const [currentId, setCurrentId] = useState();
+  const [userStatus, setUserStatus] = useState();
   const [searchCondition, setSearchCondition] = useState({
     items: {},
     pageIndex: PAGE_DEFAULT,
@@ -45,7 +55,7 @@ const UserList = () => {
   });
   const { data: dataInit } = useQuery(GET_USER_LIST, {
     variables: {
-      userInput: {},
+      userInput: searchCondition.items,
       skip: null,
       take: null,
     },
@@ -74,9 +84,69 @@ const UserList = () => {
       items: {
         fullName: form.getFieldsValue().searchInput,
         role: value !== roles[0].id ? value : null,
+        email: null,
       },
-      skip: SKIP_DEFAULT
+      skip: SKIP_DEFAULT,
     }));
+  };
+  const onDelete = async () => {
+    setLoading(true);
+    await deleteUser({
+      variables: {
+        deleteUserId: currentId,
+      },
+      onCompleted: () => {
+        setLoading(false);
+        message.success("Xóa dữ liệu thành công!");
+        setIsDeleteUser(false);
+      },
+      onError: (err) => {
+        setLoading(false);
+        message.error(`${err.message}`);
+        setIsDeleteUser(false);
+      },
+      refetchQueries: refetchQueries(),
+    });
+  };
+  const onDeleteMulti = async () => {
+    if (selectedRowKeys.length > 0) {
+      setLoading(true);
+      await deleteUsers({
+        variables: {
+          ids: selectedRowKeys,
+        },
+        onCompleted: () => {
+          setLoading(false);
+          message.success("Xóa dữ liệu thành công!");
+          setIsDeleteMulti(false);
+        },
+        onError: (err) => {
+          setLoading(false);
+          message.error(`${err.message}`);
+          setIsDeleteMulti(false);
+        },
+        refetchQueries: refetchQueries(),
+      });
+    } else message.error("Vui lòng chọn người dùng cần xóa!");
+  };
+  const handleUpdateStatus = async () => {
+    setLoading(true);
+    await updateUserStatus({
+      variables: {
+        updateUserStatusId: currentId,
+        status: userStatus === ACTIVE ? SUSPEND : ACTIVE,
+      },
+      onCompleted: () => {
+        setLoading(false);
+        message.success("Chỉnh sửa thông tin người dùng thành công!");
+        if (userStatus === ACTIVE) setIsSuspendUser(false);
+        else setIsActiveUser(false);
+      },
+      onError: (error) => {
+        setLoading(false);
+        message.error(`${error.message}`);
+      },
+    });
   };
   const onSearch = (values) => {
     setLoading(true);
@@ -85,9 +155,32 @@ const UserList = () => {
       items: {
         fullName: values.searchInput,
         role: roleSelected !== roles[0].id ? roleSelected : null,
+        email: null,
       },
       pageIndex: PAGE_DEFAULT,
     }));
+  };
+  const refetchQueries = () => {
+    return [
+      {
+        query: GET_USER_LIST,
+        variables: {
+          userInput: searchCondition.items,
+          skip: searchCondition?.pageSize
+            ? searchCondition.pageSize * (searchCondition.pageIndex - 1)
+            : SKIP_DEFAULT,
+          take: searchCondition?.pageSize || PAGE_SIZE_DEFAULT,
+        },
+      },
+      {
+        query: GET_USER_LIST,
+        variables: {
+          userInput: searchCondition.items,
+          skip: null,
+          take: null,
+        },
+      },
+    ];
   };
   const columns = [
     {
@@ -133,7 +226,11 @@ const UserList = () => {
           dropdownRender={() => (
             <Row className="flex flex-col bg-white rounded-[15px] shadow-lg w-[150px] p-2">
               <Row
-                onClick={() => setIsEditUser(true)}
+                onClick={() => {
+                  setLoading(true);
+                  setCurrentId(record.id);
+                  setIsEditUser(true);
+                }}
                 className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
               >
                 <Row className="p-2 bg-black text-white text-[16px] rounded-full mr-2">
@@ -142,20 +239,24 @@ const UserList = () => {
                 Chỉnh sửa
               </Row>
               <Row
-                onClick={
-                  record?.status !== "Khóa"
-                    ? () => setIsSuspendUser(true)
-                    : () => setIsActiveUser(true)
-                }
+                onClick={() => {
+                  setCurrentId(record.id);
+                  if (record.status === ACTIVE) setIsSuspendUser(true);
+                  else setIsActiveUser(true);
+                  setUserStatus(record.status);
+                }}
                 className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
               >
                 <Row className="p-2 bg-black text-white text-[16px] rounded-full mr-2">
                   {record?.status !== "" ? <TbLock /> : <TbLockOpen />}
                 </Row>
-                {record?.status !== "Khóa" ? "Khóa" : "Kích hoạt"}
+                {record?.status !== ACTIVE ? "Khóa" : "Kích hoạt"}
               </Row>
               <Row
-                onClick={() => setIsDeleteUser(true)}
+                onClick={() => {
+                  setCurrentId(record.id);
+                  setIsDeleteUser(true);
+                }}
                 className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
               >
                 <Row className="p-2 bg-red-500 text-white text-[16px] rounded-full mr-2">
@@ -191,6 +292,7 @@ const UserList = () => {
     if (data) {
       const items = data?.getAllUsers?.map((item) => {
         return {
+          id: item?.id,
           name: item?.fullName,
           email: item?.email,
           classes: item?.userClass?.name,
@@ -203,8 +305,8 @@ const UserList = () => {
   }, [data]);
   useEffect(() => {
     setLoading(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <Row className="flex flex-col w-full h-full bg-white p-5 !rounded-[15px] shadow-lg relative">
       <Row className="text-[20px] font-bold">Quản lý người dùng</Row>
@@ -273,24 +375,38 @@ const UserList = () => {
         isOpen={isDeleteMulti}
         setIsOpen={setIsDeleteMulti}
         message="Bạn có chắc chắn muốn xóa dữ liệu không?"
+        onSubmit={onDeleteMulti}
       />
       <ModalConfirm
         isOpen={isDeleteUser}
         setIsOpen={setIsDeleteUser}
         message="Bạn có chắc chắn muốn xóa người dùng này không?"
+        onSubmit={onDelete}
       />
       <ModalConfirm
         isOpen={isSuspendUser}
         setIsOpen={setIsSuspendUser}
         message="Bạn có chắc chắn muốn hạn chế người dùng này không?"
+        onSubmit={handleUpdateStatus}
       />
       <ModalConfirm
         isOpen={isActiveUser}
         setIsOpen={setIsActiveUser}
         message="Bạn có chắc chắn muốn kích hoạt người dùng này không?"
+        onSubmit={handleUpdateStatus}
       />
-      <FormAddUser isOpen={isAddUser} onClose={() => setIsAddUser(false)} />
-      <FormEditUser isOpen={isEditUser} setIsOpen={setIsEditUser} />
+      <FormAddUser
+        isOpen={isAddUser}
+        onClose={() => setIsAddUser(false)}
+        refetchQueries={refetchQueries}
+        setLoading={setLoading}
+      />
+      <FormEditUser
+        isOpen={isEditUser}
+        setIsOpen={setIsEditUser}
+        currentId={currentId}
+        setLoading={setLoading}
+      />
     </Row>
   );
 };

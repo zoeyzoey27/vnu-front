@@ -90,6 +90,7 @@ const ClassList = () => {
             <Row className="flex flex-col bg-white rounded-[15px] shadow-lg w-[150px] p-2">
               <Row
                 onClick={() => {
+                  setLoading(true);
                   setCurrentId(record.id);
                   setIsOpenDetail(true);
                 }}
@@ -145,7 +146,7 @@ const ClassList = () => {
     setSearchCondition((pre) => ({
       ...pre,
       className: values.searchInput,
-      pageIndex: PAGE_DEFAULT,
+      pageIndex: PAGE_DEFAULT, 
     }));
   };
   const onChangePagination = (page, limit) => {
@@ -176,23 +177,25 @@ const ClassList = () => {
     });
   };
   const onDeleteMulti = async () => {
-    setLoading(true);
-    await deleteClasses({
-      variables: {
-        ids: selectedRowKeys,
-      },
-      onCompleted: () => {
-        setLoading(false);
-        message.success("Xóa dữ liệu thành công!");
-        setIsDeleteMulti(false);
-        window.location.reload();
-      },
-      onError: (err) => {
-        setLoading(false);
-        message.error(`${err.message}`);
-        setIsDeleteMulti(false);
-      },
-    });
+    if (selectedRowKeys.length > 0) {
+      setLoading(true);
+      await deleteClasses({
+        variables: {
+          ids: selectedRowKeys,
+        },
+        onCompleted: () => {
+          setLoading(false);
+          message.success("Xóa dữ liệu thành công!");
+          setIsDeleteMulti(false);
+          window.location.reload();
+        },
+        onError: (err) => {
+          setLoading(false);
+          message.error(`${err.message}`);
+          setIsDeleteMulti(false);
+        },
+      });
+    } else message.error("Vui lòng chọn lớp cần xóa!");
   };
   useEffect(() => {
     if (data) {
@@ -286,6 +289,8 @@ const ClassList = () => {
       <DetailClass
         isOpen={isOpenDetail}
         onClose={() => setIsOpenDetail(false)}
+        currentId={currentId}
+        setLoading={setLoading}
       />
     </Row>
   );

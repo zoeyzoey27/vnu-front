@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Row, Form, Input, Button } from "antd";
 import logo from "../../assets/logo.png";
 import FormEmailForgotPw from "../FormEmailForgotPw";
-import { schemaValidate } from '../../validations/Login';
-import { converSchemaToAntdRule } from '../../validations';
+import { schemaValidate } from "../../validations/Login";
+import { converSchemaToAntdRule } from "../../validations";
 
-const FormLogin = () => {
+const FormLogin = ({ onSubmit, setLoading }) => {
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const yupSync = converSchemaToAntdRule(schemaValidate);
@@ -25,6 +25,7 @@ const FormLogin = () => {
             autoComplete="off"
             form={form}
             className="w-full"
+            onFinish={onSubmit}
           >
             <Form.Item
               name="email"
@@ -55,7 +56,11 @@ const FormLogin = () => {
               required={false}
               rules={[yupSync]}
             >
-              <Input placeholder="******" className="rounded-[10px] h-[48px]" />
+              <Input
+                placeholder="******"
+                type="password"
+                className="rounded-[10px] h-[48px]"
+              />
             </Form.Item>
             <Row
               onClick={() => setIsModalOpen(true)}
@@ -74,7 +79,11 @@ const FormLogin = () => {
           </Form>
         </Row>
       </Row>
-      <FormEmailForgotPw isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
+      <FormEmailForgotPw
+        isOpen={isModalOpen}
+        setIsOpen={setIsModalOpen}
+        setLoading={setLoading}
+      />
     </Row>
   );
 };

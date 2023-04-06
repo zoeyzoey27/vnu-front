@@ -17,3 +17,23 @@ export const GET_USER_LIST = gql`
     }
   }
 `;
+export const UPDATE_USER_STATUS = gql`
+  mutation UpdateUserStatus($updateUserStatusId: ID!, $status: String!) {
+    updateUserStatus(id: $updateUserStatusId, status: $status) {
+      id
+      userId
+      fullName
+      status
+    }
+  }
+`;
+export const DELETE_USER = gql`
+  mutation DeleteUser($deleteUserId: ID!) {
+    deleteUser(id: $deleteUserId)
+  }
+`;
+export const DELETE_USERS = gql`
+  mutation DeleteUsers($ids: [ID]!) {
+    deleteUsers(ids: $ids)
+  }
+`;

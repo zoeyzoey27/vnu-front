@@ -19,7 +19,12 @@ import ModalConfirm from "../../components/ModalConfirm";
 import FormCreateStudent from "../../components/FormCreateStudent";
 import DetailStudent from "../../components/DetailStudent";
 import { useMutation, useQuery } from "@apollo/client";
-import { DELETE_STUDENT, DELETE_STUDENTS, GET_CLASS_LIST, GET_STUDENT_LIST } from "./graphql";
+import {
+  DELETE_STUDENT,
+  DELETE_STUDENTS,
+  GET_CLASS_LIST,
+  GET_STUDENT_LIST,
+} from "./graphql";
 import { PAGE_DEFAULT, PAGE_SIZE_DEFAULT, SKIP_DEFAULT } from "../../constants";
 import { useOutletContext } from "react-router-dom";
 
@@ -261,23 +266,25 @@ const StudentList = () => {
     });
   };
   const onDeleteMulti = async () => {
-    setLoading(true);
-    await deleteStudents({
-      variables: {
-        ids: selectedRowKeys,
-      },
-      onCompleted: () => {
-        setLoading(false);
-        message.success("Xóa dữ liệu thành công!");
-        setIsDeleteMulti(false);
-      },
-      onError: (err) => {
-        setLoading(false);
-        message.error(`${err.message}`);
-        setIsDeleteMulti(false);
-      },
-      refetchQueries: refetchQueries(),
-    });
+    if (selectedRowKeys.length > 0) {
+      setLoading(true);
+      await deleteStudents({
+        variables: {
+          ids: selectedRowKeys,
+        },
+        onCompleted: () => {
+          setLoading(false);
+          message.success("Xóa dữ liệu thành công!");
+          setIsDeleteMulti(false);
+        },
+        onError: (err) => {
+          setLoading(false);
+          message.error(`${err.message}`);
+          setIsDeleteMulti(false);
+        },
+        refetchQueries: refetchQueries(),
+      });
+    } else message.error("Vui lòng chọn sinh viên cần xóa!");
   };
   return (
     <Row className="flex flex-col w-full h-full bg-white p-5 !rounded-[15px] shadow-lg relative">

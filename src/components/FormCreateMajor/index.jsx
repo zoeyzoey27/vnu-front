@@ -17,7 +17,7 @@ const FormCreateMajor = ({ isOpen, onClose, isEdit, currentId, setLoading, refet
     variables: {
       getMajorId: currentId,
     },
-    skip: currentId === null,
+    skip: currentId === null || currentId === undefined,
     onCompleted: () => {
       setLoading(false);
     },

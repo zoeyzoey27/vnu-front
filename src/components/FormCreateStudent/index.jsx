@@ -41,7 +41,7 @@ const FormCreateStudent = ({
     variables: {
       getStudentId: currentId,
     },
-    skip: currentId === null,
+    skip: currentId === null || currentId === undefined,
     onCompleted: () => {
       setLoading(false);
     },

@@ -2,21 +2,36 @@ import { Modal, Row, Form, Input, Button, Select } from "antd";
 import { GrFormClose } from "react-icons/gr";
 import { schemaValidate } from "../../validations/UpdateInfo";
 import { converSchemaToAntdRule } from "../../validations";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FormChangePw from "../FormChangePw";
 import "./style.css";
 
-const FormUpdateInfo = ({ isOpen, setIsOpen }) => {
+const FormUpdateInfo = ({
+  isOpen,
+  setIsOpen,
+  dataUser,
+  onSubmit,
+  setLoading,
+  userId,
+}) => {
   const [form] = Form.useForm();
   const [isOpenModal, setIsOpenModal] = useState(false);
   const yupSync = converSchemaToAntdRule(schemaValidate);
-  const onSubmit = () => {
-    setIsOpen(false);
-  };
   const onOpenModal = () => {
     setIsOpen(false);
     setIsOpenModal(true);
   };
+  useEffect(() => {
+    if (dataUser) {
+      form.setFieldsValue({
+        email: dataUser.email,
+        name: dataUser.fullName,
+        gender: dataUser.gender,
+        phone: dataUser.phoneNumber,
+        address: dataUser.address,
+      });
+    }
+  }, [dataUser, form]);
   return (
     <>
       <Modal
@@ -142,6 +157,8 @@ const FormUpdateInfo = ({ isOpen, setIsOpen }) => {
       </Modal>
       <FormChangePw
         isOpen={isOpenModal}
+        setLoading={setLoading}
+        userId={userId}
         onClose={() => setIsOpenModal(false)}
       />
     </>
