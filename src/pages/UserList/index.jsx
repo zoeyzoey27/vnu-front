@@ -36,7 +36,7 @@ const UserList = () => {
   const [updateUserStatus] = useMutation(UPDATE_USER_STATUS);
   const [deleteUser] = useMutation(DELETE_USER);
   const [deleteUsers] = useMutation(DELETE_USERS);
-  const [setLoading] = useOutletContext();
+  const [setLoading, role] = useOutletContext();
   const [dataUsers, setDataUsers] = useState([]);
   const [isDeleteMulti, setIsDeleteMulti] = useState(false);
   const [isAddUser, setIsAddUser] = useState(false);
@@ -226,40 +226,68 @@ const UserList = () => {
           dropdownRender={() => (
             <Row className="flex flex-col bg-white rounded-[15px] shadow-lg w-[150px] p-2">
               <Row
-                onClick={() => {
-                  setLoading(true);
-                  setCurrentId(record.id);
-                  setIsEditUser(true);
+                onClick={(e) => {
+                  if (role !== "Giảng viên") {
+                    setLoading(true);
+                    setCurrentId(record.id);
+                    setIsEditUser(true);
+                  } else e.stopPropagation();
                 }}
-                className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
+                className={`flex items-center p-2 ${
+                  role !== "Giảng viên"
+                    ? "cursor-pointer hover:bg-gray-400/20"
+                    : "text-[#ccc] cursor-default"
+                } rounded-[15px]`}
               >
-                <Row className="p-2 bg-black text-white text-[16px] rounded-full mr-2">
+                <Row
+                  className={`p-2 ${
+                    role !== "Giảng viên" ? "bg-black" : "bg-[#ccc]"
+                  } text-white text-[16px] rounded-full mr-2`}
+                >
                   <FiEdit />
                 </Row>
                 Chỉnh sửa
               </Row>
               <Row
-                onClick={() => {
-                  setCurrentId(record.id);
-                  if (record.status === ACTIVE) setIsSuspendUser(true);
-                  else setIsActiveUser(true);
-                  setUserStatus(record.status);
+                onClick={(e) => {
+                  if (role !== "Giảng viên") {
+                    setCurrentId(record.id);
+                    if (record.status === ACTIVE) setIsSuspendUser(true);
+                    else setIsActiveUser(true);
+                    setUserStatus(record.status);
+                  } else e.stopPropagation();
                 }}
-                className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
+                className={`flex items-center p-2 ${
+                  role !== "Giảng viên"
+                    ? "cursor-pointer hover:bg-gray-400/20"
+                    : "text-[#ccc] cursor-default"
+                } rounded-[15px]`}
               >
-                <Row className="p-2 bg-black text-white text-[16px] rounded-full mr-2">
+                <Row
+                  className={`p-2 ${
+                    role !== "Giảng viên" ? "bg-black" : "bg-[#ccc]"
+                  } text-white text-[16px] rounded-full mr-2`}
+                >
                   {record?.status !== "" ? <TbLock /> : <TbLockOpen />}
                 </Row>
-                {record?.status !== ACTIVE ? "Khóa" : "Kích hoạt"}
+                {record?.status !== ACTIVE ? "Kích hoạt" : "Khóa"}
               </Row>
               <Row
                 onClick={() => {
                   setCurrentId(record.id);
                   setIsDeleteUser(true);
                 }}
-                className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
+                className={`flex items-center p-2 ${
+                  role !== "Giảng viên"
+                    ? "cursor-pointer hover:bg-gray-400/20"
+                    : "text-[#ccc] cursor-default"
+                } rounded-[15px]`}
               >
-                <Row className="p-2 bg-red-500 text-white text-[16px] rounded-full mr-2">
+                <Row
+                  className={`p-2 ${
+                    role !== "Giảng viên" ? "bg-red-500" : "bg-[#ccc]"
+                  } text-white text-[16px] rounded-full mr-2`}
+                >
                   <MdDelete />
                 </Row>
                 Xóa
@@ -267,7 +295,9 @@ const UserList = () => {
             </Row>
           )}
         >
-          <CiCircleMore className="text-[25px] cursor-pointer text-[#015198]" />
+          <CiCircleMore
+            className={`text-[25px] text-[#015198] cursor-pointer`}
+          />
         </Dropdown>
       ),
       width: "20px",
@@ -340,18 +370,32 @@ const UserList = () => {
             <Button
               shape="circle"
               size="large"
-              onClick={() => setIsDeleteMulti(true)}
+              onClick={(e) =>
+                role !== "Giảng viên"
+                  ? setIsDeleteMulti(true)
+                  : e.stopPropagation()
+              }
               icon={<MdDelete className="!text-white text-[20px]" />}
-              className="!border-0 !outline-0 bg-red-500 shadow-lg hover:opacity-80 flex items-center justify-center"
+              className={`!border-0 !outline-0 ${
+                role !== "Giảng viên"
+                  ? "bg-red-500 hover:opacity-80"
+                  : "bg-[#ccc] !cursor-default"
+              } shadow-lg flex items-center justify-center`}
             />
           </Tooltip>
           <Tooltip placement="top" title="Thêm mới">
             <Button
               shape="circle"
               size="large"
-              onClick={() => setIsAddUser(true)}
+              onClick={(e) =>
+                role !== "Giảng viên" ? setIsAddUser(true) : e.stopPropagation()
+              }
               icon={<RiUserAddFill className="!text-white text-[20px]" />}
-              className="!border-0 !outline-0 bg-black shadow-lg hover:opacity-80 ml-2 flex items-center justify-center"
+              className={`!border-0 !outline-0 ${
+                role !== "Giảng viên"
+                  ? "bg-red-500 hover:opacity-80"
+                  : "bg-[#ccc] !cursor-default"
+              } shadow-lg ml-2 flex items-center justify-center`}
             />
           </Tooltip>
         </Row>

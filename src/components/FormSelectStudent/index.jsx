@@ -21,7 +21,7 @@ const FormSelectStudent = ({
   };
   const onSearch = (values) => {
     const items = studentList.filter((item) =>
-      item.name.match(values.searchInput)
+      item?.name?.toLowerCase().match(values?.searchInput?.toLowerCase())
     );
     setListItems(items);
   };

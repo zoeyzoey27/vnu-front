@@ -22,7 +22,7 @@ import { useOutletContext } from "react-router-dom";
 
 const MajorList = () => {
   const [form] = Form.useForm();
-  const [setLoading] = useOutletContext();
+  const [setLoading, role] = useOutletContext();
   const [deleteMajor] = useMutation(DELETE_MAJOR);
   const [deleteMajors] = useMutation(DELETE_MAJORS);
   const [dataMajors, setDataMajors] = useState([]);
@@ -86,26 +86,46 @@ const MajorList = () => {
           dropdownRender={() => (
             <Row className="flex flex-col bg-white rounded-[15px] shadow-lg w-[150px] p-2">
               <Row
-                onClick={() => {
-                  setLoading(true);
-                  setIsEditMajor(true);
-                  setCurrentId(record.id);
+                onClick={(e) => {
+                  if (role !== "Giảng viên") {
+                    setLoading(true);
+                    setIsEditMajor(true);
+                    setCurrentId(record.id);
+                  } else e.stopPropagation();
                 }}
-                className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
+                className={`flex items-center p-2 rounded-[15px] ${
+                  role !== "Giảng viên"
+                    ? "cursor-pointer hover:bg-gray-400/20"
+                    : "text-[#ccc] cursor-default"
+                }`}
               >
-                <Row className="p-2 bg-black text-white text-[16px] rounded-full mr-2">
+                <Row
+                  className={`p-2 ${
+                    role !== "Giảng viên" ? "bg-black" : "bg-[#ccc]"
+                  } text-white text-[16px] rounded-full mr-2`}
+                >
                   <FiEdit />
                 </Row>
                 Chỉnh sửa
               </Row>
               <Row
-                onClick={() => {
-                  setIsDeleteMajor(true);
-                  setCurrentId(record.id);
+                onClick={(e) => {
+                  if (role !== "Giảng viên") {
+                    setIsDeleteMajor(true);
+                    setCurrentId(record.id);
+                  } else e.stopPropagation();
                 }}
-                className="flex items-center p-2 cursor-pointer rounded-[15px] hover:bg-gray-400/20"
+                className={`flex items-center p-2 rounded-[15px] ${
+                  role !== "Giảng viên"
+                    ? "cursor-pointer hover:bg-gray-400/20"
+                    : "text-[#ccc] cursor-default"
+                }`}
               >
-                <Row className="p-2 bg-red-500 text-white text-[16px] rounded-full mr-2">
+                <Row
+                  className={`p-2 ${
+                    role !== "Giảng viên" ? "bg-red-500" : "bg-[#ccc]"
+                  } text-white text-[16px] rounded-full mr-2`}
+                >
                   <MdDelete />
                 </Row>
                 Xóa
@@ -239,18 +259,34 @@ const MajorList = () => {
           <Button
             shape="circle"
             size="large"
-            onClick={() => setIsDeleteMulti(true)}
+            onClick={(e) =>
+              role !== "Giảng viên"
+                ? setIsDeleteMulti(true)
+                : e.stopPropagation()
+            }
             icon={<MdDelete className="!text-white text-[20px]" />}
-            className="!border-0 !outline-0 bg-red-500 shadow-lg hover:opacity-80 flex items-center justify-center"
+            className={`!border-0 !outline-0 ${
+              role !== "Giảng viên"
+                ? "bg-red-500 hover:opacity-80"
+                : "bg-[#ccc] cursor-default"
+            } shadow-lg flex items-center justify-center`}
           />
         </Tooltip>
         <Tooltip placement="top" title="Thêm mới">
           <Button
             shape="circle"
             size="large"
-            onClick={() => setIsCreateMajor(true)}
+            onClick={(e) =>
+              role !== "Giảng viên"
+                ? setIsCreateMajor(true)
+                : e.stopPropagation()
+            }
             icon={<MdAddCircle className="!text-white text-[20px]" />}
-            className="!border-0 !outline-0 bg-black shadow-lg hover:opacity-80 ml-2 flex items-center justify-center"
+            className={`!border-0 !outline-0 ${
+              role !== "Giảng viên"
+                ? "bg-black hover:opacity-80"
+                : "bg-[#ccc] cursor-default"
+            } shadow-lg ml-2 flex items-center justify-center`}
           />
         </Tooltip>
       </Row>

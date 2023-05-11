@@ -21,7 +21,7 @@ const FormSelectClass = ({
   };
   const onSearch = (values) => {
     const items = classList.filter((item) =>
-      item.name.toLowerCase().match(values?.searchInput?.toLowerCase())
+      item?.name?.toLowerCase().match(values?.searchInput?.toLowerCase())
     );
     setListItems(items);
   };

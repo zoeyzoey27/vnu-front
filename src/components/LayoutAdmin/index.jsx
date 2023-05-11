@@ -240,7 +240,7 @@ const LayoutAdmin = () => {
         </Sider>
         <Layout className="site-layout">
           <Content className="m-5">
-            <Outlet context={[setLoading]} />
+            <Outlet context={[setLoading, role]} />
           </Content>
           <FormUpdateInfo
             isOpen={isOpenModal}
